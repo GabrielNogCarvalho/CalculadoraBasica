@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora Moderna</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .calculator {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            width: 300px;
+        }
+
+        .display {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: right;
+            min-height: 80px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .display-previous {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .display-current {
+            color: white;
+            font-size: 2.5em;
+            font-weight: 300;
+            word-break: break-all;
+        }
+
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+        }
+
+        .btn {
+            border: none;
+            border-radius: 15px;
+            font-size: 1.2em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-clear {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+        }
+
+        .btn-operator {
+            background: linear-gradient(45deg, #4ecdc4, #44a08d);
+        }
+
+        .btn-equals {
+            background: linear-gradient(45deg, #45b7d1, #96c93d);
+            grid-column: span 2;
+        }
+
+        .btn-zero {
+            grid-column: span 2;
+        }
+
+        .calculator-title {
+            text-align: center;
+            color: white;
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            font-weight: 300;
+        }
+    </style>
+</head>
+<body>
+    <div class="calculator">
+        <h1 class="calculator-title">Calculadora</h1>
+        
+        <div class="display">
+            <div class="display-previous" id="previous-display"></div>
+            <div class="display-current" id="current-display">0</div>
+        </div>
+
+        <div class="buttons">
+            <button class="btn btn-clear" onclick="clearAll()">C</button>
+            <button class="btn btn-clear" onclick="deleteLast()">⌫</button>
+            <button class="btn btn-operator" onclick="chooseOperation('/')">/</button>
+            <button class="btn btn-operator" onclick="chooseOperation('*')">×</button>
+
+            <button class="btn" onclick="appendNumber('7')">7</button>
+            <button class="btn" onclick="appendNumber('8')">8</button>
+            <button class="btn" onclick="appendNumber('9')">9</button>
+            <button class="btn btn-operator" onclick="chooseOperation('-')">-</button>
+
+            <button class="btn" onclick="appendNumber('4')">4</button>
+            <button class="btn" onclick="appendNumber('5')">5</button>
+            <button class="btn" onclick="appendNumber('6')">6</button>
+            <button class="btn btn-operator" onclick="chooseOperation('+')">+</button>
+
+            <button class="btn" onclick="appendNumber('1')">1</button>
+            <button class="btn" onclick="appendNumber('2')">2</button>
+            <button class="btn" onclick="appendNumber('3')">3</button>
+            <button class="btn btn-equals" onclick="calculate()" rowspan="2">=</button>
+
+            <button class="btn btn-zero" onclick="appendNumber('0')">0</button>
+            <button class="btn" onclick="appendNumber('.')">.</button>
+        </div>
+    </div>
+
+    <script>
+        // Variáveis globais para armazenar o estado da calculadora
+        let currentOperand = '0';      // Número atual sendo digitado
+        let previousOperand = '';      // Número anterior (antes da operação)
+        let operation = null;          // Operação selecionada (+, -, *, /)
+
+        // Elementos do DOM para atualizar a interface
+        const currentDisplay = document.getElementById('current-display');
+        const previousDisplay = document.getElementById('previous-display');
+
+        // Função para adicionar números ao display
+        function appendNumber(number) {
+            // Se o número atual for '0' e não for um ponto decimal, substitui por o novo número
+            if (currentOperand === '0' && number !== '.') {
+                currentOperand = number;
+            } 
+            // Se já existe um ponto, não permite adicionar outro
+            else if (number === '.' && currentOperand.includes('.')) {
+                return;
+            } 
+            // Adiciona o número ao operando atual
+            else {
+                currentOperand = currentOperand + number;
+            }
+            updateDisplay(); // Atualiza o que aparece na tela
+        }
+
+        // Função para escolher uma operação (+, -, *, /)
+        function chooseOperation(selectedOperation) {
+            // Se já existe uma operação pendente, calcula primeiro
+            if (operation !== null && previousOperand !== '') {
+                calculate();
+            }
+            
+            // Define a nova operação e move o número atual para "anterior"
+            operation = selectedOperation;
+            previousOperand = currentOperand;
+            currentOperand = '0';
+            updateDisplay();
+        }
+
+        // Função principal para realizar os cálculos
+        function calculate() {
+            let computation;
+            const prev = parseFloat(previousOperand);  // Converte string para número
+            const current = parseFloat(currentOperand);
+
+            // Verifica se os números são válidos
+            if (isNaN(prev) || isNaN(current)) return;
+
+            // Switch para executar a operação correta
+            switch (operation) {
+                case '+':
+                    computation = prev + current;
+                    break;
+                case '-':
+                    computation = prev - current;
+                    break;
+                case '*':
+                    computation = prev * current;
+                    break;
+                case '/':
+                    // Verifica divisão por zero
+                    if (current === 0) {
+                        alert('Não é possível dividir por zero!');
+                        return;
+                    }
+                    computation = prev / current;
+                    break;
+                default:
+                    return; // Se não há operação válida, sai da função
+            }
+
+            // Atualiza os valores e limpa a operação
+            currentOperand = computation.toString();
+            operation = null;
+            previousOperand = '';
+            updateDisplay();
+        }
+
+        // Função para limpar tudo (botão C)
+        function clearAll() {
+            currentOperand = '0';
+            previousOperand = '';
+            operation = null;
+            updateDisplay();
+        }
+
+        // Função para apagar o último dígito (botão ⌫)
+        function deleteLast() {
+            // Remove o último caractere
+            currentOperand = currentOperand.slice(0, -1);
+            
+            // Se ficar vazio, volta para '0'
+            if (currentOperand === '') {
+                currentOperand = '0';
+            }
+            updateDisplay();
+        }
+
+        // Função para atualizar o que aparece na tela
+        function updateDisplay() {
+            // Mostra o número atual
+            currentDisplay.textContent = currentOperand;
+            
+            // Mostra a operação anterior se existir
+            if (operation != null) {
+                // Troca * por × para ficar mais bonito
+                const operationSymbol = operation === '*' ? '×' : operation;
+                previousDisplay.textContent = previousOperand + ' ' + operationSymbol;
+            } else {
+                previousDisplay.textContent = '';
+            }
+        }
+
+        // Adiciona suporte ao teclado
+        document.addEventListener('keydown', function(event) {
+            // Números de 0 a 9
+            if (event.key >= '0' && event.key <= '9') {
+                appendNumber(event.key);
+            }
+            
+            // Operações
+            if (event.key === '+') chooseOperation('+');
+            if (event.key === '-') chooseOperation('-');
+            if (event.key === '*') chooseOperation('*');
+            if (event.key === '/') {
+                event.preventDefault(); // Impede a busca do navegador
+                chooseOperation('/');
+            }
+            
+            // Ponto decimal
+            if (event.key === '.') appendNumber('.');
+            
+            // Enter ou = para calcular
+            if (event.key === 'Enter' || event.key === '=') {
+                event.preventDefault();
+                calculate();
+            }
+            
+            // Escape ou C para limpar
+            if (event.key === 'Escape' || event.key.toLowerCase() === 'c') {
+                clearAll();
+            }
+            
+            // Backspace para apagar
+            if (event.key === 'Backspace') {
+                event.preventDefault();
+                deleteLast();
+            }
+        });
+
+        // Inicializa o display quando a página carrega
+        updateDisplay();
+    </script>
+</body>
+</html>
